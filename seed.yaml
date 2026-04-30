@@ -1,0 +1,194 @@
+goal: Build a browser-playable Mario Kart-style combat racing game in ./apps/kart/
+  with Mario Kart-like item combat feel, AI opponents, and real 2-player WebRTC online
+  multiplayer
+task_type: code
+brownfield_context:
+  project_type: brownfield
+  context_references:
+  - path: /Users/jaegyu.lee/Project/ouroboros-gemini3/apps/kart
+    role: primary
+    summary: Isolated browser game app to implement with its own Vite TypeScript build
+  - path: /Users/jaegyu.lee/Project/ouroboros-gemini3/apps/kart/server
+    role: primary
+    summary: Minimal custom Node WebSocket signaling server for WebRTC setup
+  - path: /Users/jaegyu.lee/Project/ouroboros-gemini3/src/ouroboros
+    role: reference
+    summary: Existing Python Ouroboros source tree that must not be modified
+  - path: /Users/jaegyu.lee/Project/ouroboros-gemini3/skills
+    role: reference
+    summary: Existing skills directory that must not be modified
+  - path: /Users/jaegyu.lee/Project/ouroboros-gemini3/tests
+    role: reference
+    summary: Existing Python tests that must not be modified
+  existing_patterns:
+  - Keep the game fully isolated from the Python TUI/CLI project
+  - Confine all implementation to ./apps/kart/**
+  - Use a standalone frontend package with its own package.json and tsconfig
+  - Canvas-only Vite TypeScript app
+  - Host-authoritative multiplayer simulation
+  - WebSocket signaling followed by RTCDataChannel gameplay traffic
+  existing_dependencies:
+  - Vite
+  - TypeScript
+  - Three.js
+  - Cannon-es
+  - Node.js WebSocket signaling server
+  - WebRTC RTCDataChannel
+constraints:
+- Work isolated under apps/kart/**
+- Must not touch src/ouroboros/, skills/, or tests/
+- Use Vite + TypeScript + Three.js + Cannon-es
+- Use Node WebSocket signaling + WebRTC RTCDataChannel
+- Desktop Chrome only
+- Host-authoritative networking
+- '4 racers total: 2 humans via WebRTC + 2 AI'
+- 1 track
+- 3 laps
+- Target ~2 minute race
+- Target 60 FPS
+- Peer latency under ~150ms in normal local test conditions
+- Multiplayer is non-negotiable and offline-only single-player is not acceptable
+- Prioritize item combat feel over AI polish if scope tightens
+- Do not lock item tuning to exact numeric constants
+- No reuse of Python project libraries
+- No shared build system with Python project
+- apps/kart must have its own package.json and tsconfig
+- Avoid Unity, Babylon, SFU/MCU servers, React, and Next
+acceptance_criteria:
+- Browser game runs from ./apps/kart/ in Desktop Chrome
+- Race supports 4 racers with 2 WebRTC human players and 2 MVP-level AI opponents
+- Game includes one playable track with 3-lap race flow
+- Boost item makes the kart noticeably faster and includes visible camera/FOV widening
+  plus particle trail feedback
+- Boost is unacceptable if it is only a scalar speed change with no visual or camera
+  feedback
+- Shell item fires a visible straight-line forward projectile with no homing or track-following
+  requirement
+- Shell hit causes a brief loss-of-control spin-out tuned by playtest around a 1-2s
+  feel range
+- Shell is unacceptable if it passes through karts, has no visible projectile, or
+  causes no spin-out reaction
+- Banana item drops behind the kart and persists on track as a static hazard until
+  hit or race end
+- Banana hit causes the same spin-out reaction as shell
+- Banana is unacceptable if it does not persist, does not spin out on contact, or
+  is visible only to the dropper
+- Boost, shell, banana, and spin-out effects are visible and synchronized to both
+  multiplayer clients within the existing ~150ms latency target
+- Remote player movement is smooth using host-authoritative simulation with remote
+  input deltas
+- Item combat is feel-checked by playtest and iterated until it feels Mario Kart-like
+- Simple particles and minor spin animation jitter are acceptable
+- AI may use items suboptimally
+- Track contains fixed item box positions placed along the racing line
+- Picking up an item box grants exactly one random item from {boost, shell, banana}
+  (uniform random unless implementer chooses to weight)
+- Item boxes regenerate after a short delay so they remain available throughout the
+  3-lap race
+- Each kart holds at most one item at a time (single-slot, no queue or stockpile)
+- Item box pickup judgement is host-authoritative and the granted item is propagated
+  to peers
+ontology_schema:
+  name: KartCombatRacingGame
+  description: Domain model for a browser-based combat racing game with karts, races,
+    items, AI racers, item boxes, and host-authoritative WebRTC multiplayer synchronization
+  fields:
+  - name: race
+    type: object
+    description: Track, lap count, race state, timing, and finish conditions
+    required: true
+  - name: racer
+    type: object
+    description: Human or AI kart participant with position, velocity, lap progress,
+      item state, and spin-out state
+    required: true
+  - name: player
+    type: object
+    description: Local or remote human connected through WebRTC input and synchronization
+    required: true
+  - name: aiOpponent
+    type: object
+    description: MVP-level computer-controlled racer that can drive and use items
+    required: true
+  - name: item
+    type: object
+    description: Boost, shell, or banana behavior and presentation
+    required: true
+  - name: boost
+    type: object
+    description: Temporary speed-feel item with camera/FOV widening and particle trail
+    required: true
+  - name: shell
+    type: object
+    description: Visible straight-line projectile that spins out hit targets
+    required: true
+  - name: banana
+    type: object
+    description: Persistent static track hazard that spins out colliding karts
+    required: true
+  - name: spinOut
+    type: object
+    description: Brief loss-of-control reaction shared by shell and banana hits
+    required: true
+  - name: itemBox
+    type: object
+    description: Fixed-position pickup that grants one random item and regenerates
+      after a delay
+    required: true
+  - name: itemSlot
+    type: object
+    description: Per-kart single-item holder set on pickup and cleared on use
+    required: true
+  - name: networkSession
+    type: object
+    description: Host-authoritative multiplayer session using WebSocket signaling
+      and RTCDataChannel
+    required: true
+  - name: syncEvent
+    type: object
+    description: Networked movement and item-effect state visible to both players
+    required: true
+evaluation_principles:
+- name: ItemCombatFeel
+  description: Boost, shell, and banana should feel responsive, visible, and Mario
+    Kart-like through playtest iteration
+  weight: 0.35
+- name: MultiplayerCore
+  description: Real 2-player WebRTC racing with synchronized movement and item effects
+    must work reliably as a v1 requirement
+  weight: 0.3
+- name: PerformanceAndResponsiveness
+  description: Game should target 60 FPS and keep peer-visible item effects within
+    ~150ms under normal local test conditions
+  weight: 0.15
+- name: ScopeIsolation
+  description: Implementation must stay inside apps/kart/** and preserve unrelated
+    repository areas
+  weight: 0.1
+- name: RacingCompleteness
+  description: Track, laps, AI racers, item-box pickups, race flow, and finish conditions
+    should create a complete playable race
+  weight: 0.1
+exit_conditions:
+- name: AcceptanceSatisfied
+  description: All acceptance criteria pass in Desktop Chrome local validation
+  criteria: Playable 4-racer race with 2 WebRTC humans, AI opponents, item-box pickups,
+    synced items, and item-feel playtest approval
+- name: ScopeViolation
+  description: Work attempts to modify forbidden areas outside apps/kart/**
+  criteria: Stop and revise implementation scope
+- name: MultiplayerFailure
+  description: Real 2-player WebRTC racing with synchronized item effects cannot be
+    demonstrated
+  criteria: Do not accept offline-only fallback
+- name: PerformanceFailure
+  description: Game cannot approach target responsiveness or smoothness under normal
+    local test conditions
+  criteria: Continue optimization or reduce non-core polish
+metadata:
+  seed_id: seed_8ef34ed7280a
+  version: 1.0.0
+  created_at: '2026-04-29T15:27:19.747167Z'
+  ambiguity_score: 0.156
+  interview_id: interview_20260429_151741
+  parent_seed_id: seed_57c44e12342e

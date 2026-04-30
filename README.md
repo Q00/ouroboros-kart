@@ -8,6 +8,12 @@ spin-out combat.
 
 ![Ouroboros oneshot TUI completion](./tui.png)
 
+## Demo
+
+![Gameplay demo](./media/demo-play.gif)
+
+[Open the MP4 demo video](./media/demo-play.mp4)
+
 ## What Ouroboros Backend Codex Accepted
 
 Ouroboros backend Codex accepted `seed.yaml` as the contract and worked only
